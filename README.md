@@ -17,6 +17,15 @@ geographic trends across the platform.
 
 ---
 
+# 📦 Data
+
+This project uses the **Brazilian E-Commerce Public Dataset by Olist** (Kaggle, CC BY-NC-SA 4.0,
+2016–2018). Raw CSVs aren't included here download them and place all files in this folder.
+
+**Source:** [Kaggle – Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
+
+---
+
 ## 🎯 Project Objectives
 
 Olist is a marketplace connecting independent sellers to customers, handling orders, payments,
@@ -381,7 +390,8 @@ A **7-page interactive Power BI dashboard**, each page designed to answer one co
 
 ### SQL Analysis
 1. Clone or download this repository
-2. Import the Olist dataset from the `data/` folder into MySQL
+2. Download the dataset see [`data/README.md`](data/README.md) for the source link and setup instructions
+   and import it into MySQL
 3. Open MySQL Workbench and run the files in the `queries/` folder in order
 4. Each file is organized by analysis section and includes inline comments explaining the business
    question
