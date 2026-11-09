@@ -1,6 +1,6 @@
-# 🛒 Olist E-Commerce Sales & Customer Analysis End-to-End SQL + Power BI
+# Olist E-Commerce Sales & Customer Analysis End-to-End SQL + Power BI
 
-
+## 📌 Project Overview
 An end-to-end data analyst project covering SQL exploration in MySQL through to an interactive
 Power BI dashboard, built on Olist's real Brazilian marketplace data (2016–2018). The project
 looks at revenue, delivery performance, seller and product behavior, customer segment, and
@@ -17,7 +17,7 @@ geographic trends across the platform.
 
 ---
 
-# 📦 Data
+## Data
 
 This project uses the **Brazilian E-Commerce Public Dataset by Olist** (Kaggle, CC BY-NC-SA 4.0,
 2016–2018). Raw CSVs aren't included here download them and place all files in this folder.
@@ -26,7 +26,7 @@ This project uses the **Brazilian E-Commerce Public Dataset by Olist** (Kaggle, 
 
 ---
 
-## 🎯 Project Objectives
+## Project Objectives
 
 Olist is a marketplace connecting independent sellers to customers, handling orders, payments,
 and delivery in between. This project analyzes that data to answer key business questions about
@@ -37,24 +37,24 @@ in an interactive Power BI dashboard.
 - How well is delivery performing, and does delivery speed affect customer satisfaction?
 - Identify top-performing and underperforming products, categories, and sellers by revenue, order volume, and customer rating
 - Segment customers using RFM (Recency, Frequency, Monetary) analysis to separate loyal, at-risk, and lost customers
-- Map revenue, order volume, and delivery performance across Brazilian states
-- How has the business trended month-over-month and year-over-year?
+- Map sales, order volume, and delivery performance across Brazilian states
+- Track month-over-month and year-over-year trends
 - Provide data-backed operational and retention recommendations
 
 ---
 
-## 🗄️ Database Schema
+## Database Schema
 
 The dataset consists of **9 related tables**, covering orders, order items, payments, reviews,
 customers, sellers, products, product category translations, and geolocation data.
 
-<img width="1018" height="601" alt="image" src="https://github.com/user-attachments/assets/abb0ba7f-daed-411a-a3b5-2d31c7f8e4f4" />
+<img width="1016" height="598" alt="image" src="https://github.com/user-attachments/assets/d03dc234-87f0-4e5e-8487-89ac8cfe2d2d" />
 
 
 
 ---
 
-## 🧹 Data Cleaning & Transformation
+## Data Cleaning & Transformation
 
 The raw dataset was reviewed and validated in MySQL before analysis to ensure consistency,
 correct data types, and reliable joins across all tables.
@@ -84,38 +84,35 @@ correct data types, and reliable joins across all tables.
 
 ---
 
-## 🛠️ What I Built
+## What I Built
 
 **SQL Layer**
 - Executive KPI summary (revenue, orders, AOV, delivery/cancellation rate, review score)
 - Order & delivery analysis (weekday/hour patterns, delivery speed vs. satisfaction, late delivery rate)
 - Product & category performance (top/bottom by revenue, orders, rating; frequently bought together)
-- Customer analysis (CLV, repeat rate, churn detection, state-level value)
+- Customer analysis
 - Seller analysis (top-seller concentration, satisfaction, MoM growth)
 - Geographic analysis (revenue, orders, AOV by state)
-- RFM segmentation via `NTILE(5)` Champions, Loyal, Potential Loyalists, At Risk, Lost
+- RFM segmentation Champions, Loyal, Potential Loyalists, At Risk, Lost
 
 **Power BI Layer**
-- Connected Power BI directly to the MySQL database, bringing the SQL-analyzed tables into a live
-  model so the dashboard visualizes real, connected data rather than static exports
-- 7-page interactive dashboard on a live MySQL connection
-- Full star-schema model with a dedicated Date table for time intelligence
+- Connected Power BI directly to the MySQL database (Import mode), loading the SQL-analyzed tables into a data model
+  so the dashboard is built from the database tables rather than static CSV exports
+- 7-page interactive dashboard connected to MySQL (refreshable from the database)
 - DAX measures for revenue, AOV, delivery/cancellation rate, and gap-tolerant MoM growth
 - Category Detail **drill-through** with metric toggle and rating-vs-target gauge
 - Customer Detail page with one-time vs. repeat breakdown and Top 100 leaderboard
-- Seller Analysis scatter chart (volume vs. rating)
+- Seller Analysis scatter chart (orders vs. revenue)
 - Geography page with Brazil map and customer-to-seller ratio
 - Custom DAX measures stored in a **dedicated Measures Table** for clean model organisation
 - RFM Analysis page built on a validated native SQL import
 
 ---
 
-## 🔍 Query Preview
+## Query Preview
 
 A few highlights from the SQL queries written in this project.
 
-
----
 
 ### 1. Does delivery speed impact customer review scores?
 
@@ -138,7 +135,7 @@ ORDER BY MIN(DATEDIFF(o.order_delivered_customer_date, o.order_purchase_timestam
 
 **Output**
 
-<img width="342" height="132" alt="image" src="https://github.com/user-attachments/assets/26782e44-44e3-4c5c-8685-29350cfa0288" />
+<img width="340" height="133" alt="image" src="https://github.com/user-attachments/assets/873883db-9007-40c0-a6e2-4b0e6f3a2912" />
 
 
 ---
@@ -161,7 +158,9 @@ FROM rnk;
 
 **Output**
 
-<img width="220" height="78" alt="image" src="https://github.com/user-attachments/assets/b0c09baa-1547-47a0-bcec-aa8fadcc791f" />
+<img width="219" height="79" alt="image" src="https://github.com/user-attachments/assets/e6c68bf3-4b76-4919-b41f-af7e7abb0cfc" />
+
+
 
 
 ---
@@ -174,38 +173,37 @@ SELECT c.customer_unique_id,
 DATEDIFF((SELECT MAX(order_purchase_timestamp) FROM orders),
 MAX(o.order_purchase_timestamp)) AS recency,
 COUNT(DISTINCT o.order_id) AS frequency,
-ROUND(SUM(op.payment_value), 2) AS monetary
-FROM customers c
+ROUND(SUM(op.payment_value), 2) AS monetary FROM customers c
 JOIN orders o ON c.customer_id = o.customer_id
 JOIN order_payments op ON o.order_id = op.order_id
 WHERE o.order_status = 'delivered'
 GROUP BY c.customer_unique_id),
 
 rfm_scores AS (
-SELECT *,
-NTILE(5) OVER (ORDER BY recency DESC) AS r_score,
-NTILE(5) OVER (ORDER BY frequency ASC) AS f_score,
-NTILE(5) OVER (ORDER BY monetary ASC) AS m_score
+SELECT *, NTILE(5) OVER (ORDER BY recency DESC, customer_unique_id) AS r_score,
+CASE WHEN frequency >= 3 THEN 5
+WHEN frequency = 2  THEN 4
+ELSE 1 END AS f_score,
+NTILE(5) OVER (ORDER BY monetary ASC, customer_unique_id) AS m_score
 FROM rfm_base),
 
 rfm_segments AS (
 SELECT *, CONCAT(r_score, f_score, m_score) AS rfm_code,
-CASE
-WHEN r_score >= 4 AND f_score >= 4 AND m_score >= 4 THEN 'Champions'
+CASE WHEN r_score >= 4 AND f_score >= 4 AND m_score >= 4 THEN 'Champions'
 WHEN r_score >= 4 AND f_score >= 4 THEN 'Loyal Customers'
-WHEN r_score >= 4 AND f_score <= 3 THEN 'Potential Loyalists'
-WHEN r_score <= 2 AND f_score >= 3 THEN 'At Risk'
+WHEN r_score >= 4 AND f_score = 1 THEN 'Potential Loyalists'
+WHEN r_score <= 3 AND f_score >= 4 THEN 'At Risk'
 ELSE 'Lost Customers'
- END AS rfm_segment
-FROM rfm_scores)
+END AS rfm_segment FROM rfm_scores)
 
-SELECT rfm_segment, COUNT(*) AS total_customers,
-ROUND(COUNT(*) / SUM(COUNT(*)) OVER() * 100, 2) AS pct_of_total,
-ROUND(AVG(recency), 1) AS avg_recency_days,
+SELECT rfm_segment,
+COUNT(*) AS total_customers,
+ROUND(COUNT(*) / SUM(COUNT(*)) OVER () * 100, 2) AS pct_of_total,
+ROUND(AVG(recency), 1)  AS avg_recency_days,
 ROUND(AVG(frequency), 2) AS avg_orders,
-ROUND(AVG(monetary), 2) AS avg_monetary,
-ROUND(SUM(monetary), 2) AS total_revenue,
-ROUND(SUM(monetary) / SUM(SUM(monetary)) OVER() * 100, 2) AS pct_revenue
+ROUND(AVG(monetary), 2)  AS avg_monetary,
+ROUND(SUM(monetary), 2)  AS total_revenue,
+ROUND(SUM(monetary) / SUM(SUM(monetary)) OVER () * 100, 2) AS pct_revenue
 FROM rfm_segments
 GROUP BY rfm_segment
 ORDER BY total_revenue DESC;
@@ -213,19 +211,20 @@ ORDER BY total_revenue DESC;
 
 **Output**
 
-<img width="747" height="138" alt="image" src="https://github.com/user-attachments/assets/53e298f7-7191-4122-a3a5-60588c5b8d7f" />
+<img width="731" height="131" alt="image" src="https://github.com/user-attachments/assets/2a11b161-e1eb-478c-81e7-81aa94633dd6" />
+
 
 
 ---
 
-## 🧮 DAX Measures Preview
+## DAX Measures Preview
 
 A few highlights from the DAX measures written in this project.
 
 ### 1. Gross Revenue (Product + Shipping)
 
 ```dax
-Total Revenue =
+Gross Revenue =
 CALCULATE(
 SUM(order_items[price]) + SUM(order_items[freight_value]),
 orders[order_status] = "delivered")
@@ -260,7 +259,7 @@ CALCULATE([Delivered Orders],
 
 ---
 
-## ⚠️ Challenges & Solutions
+## Challenges & Solutions
 
 
 **Challenge 1:** Month-over-month KPI cards kept showing blank or extreme, wrong percentages.
@@ -272,14 +271,16 @@ nearest month that actually has data, instead of always assuming exactly one mon
 
 ---
 
-**Challenge 2:** RFM segment counts in Power BI didn't match the SQL results.
+**Challenge 2:** RFM segments were wrong: one-time buyers were getting high frequency scores. Since 
+97% of customers ordered only once, `NTILE(5)` split these tied values into different buckets arbitrarily,
+and the results could change between runs.
 
-**Solution:** This happened because **DAX `RANKX`** handles tied values differently than SQL's **`NTILE`**.
-To ensure accurate segmentation, I performed the RFM analysis in SQL and imported the results directly into Power BI.
+**Solution:** Scored frequency directly from order count (1, 2, 3+ orders) and used `NTILE(5)` only for recency
+and monetary, with a tie-breaker for reproducible results.
 
 ---
 
-## 📊 Power BI Dashboard
+## Power BI Dashboard
 
 The SQL findings were then visualized in an interactive Power BI dashboard. The dashboard translates
 query results into clear business visuals that a non-technical stakeholder can explore and act on.
@@ -296,118 +297,131 @@ A **7-page interactive Power BI dashboard**, each page designed to answer one co
 **Seller Analysis**: Which sellers drive the most revenue, and does seller scale affect customer satisfaction?
 **RFM Analysis**: Which customers are our most valuable, and which are at risk of churning?
 
-### Dashboard Preview
+## 🖼️ Dashboard Preview
 
 #### Page 1: Executive Dashboard
 
-<img width="1038" height="556" alt="image" src="https://github.com/user-attachments/assets/940e7273-db2e-48c6-a730-ae9ca2ddec0f" />
+<img width="918" height="490" alt="image" src="https://github.com/user-attachments/assets/28b78f02-9a2e-4058-9495-056a31691e46" />
+
 
 
 #### Page 2: Order & Delivery Analysis
 
-<img width="1036" height="555" alt="image" src="https://github.com/user-attachments/assets/5c1c1150-2b3a-44b7-bbc2-9d59920dd530" />
+<img width="921" height="492" alt="image" src="https://github.com/user-attachments/assets/78a1b14e-1cd7-4f1a-8aa1-3b1cbc47bc4a" />
+
 
 
 #### Page 3: Category Detail
 
-<img width="1041" height="559" alt="image" src="https://github.com/user-attachments/assets/7f83b3cb-d24b-4fb1-835d-fdf3c8c4e1be" />
+<img width="918" height="492" alt="image" src="https://github.com/user-attachments/assets/ec9eb6b1-46ae-4cd9-af4c-dd92656fb45d" />
+
 
 
 #### Page 4: Geography Analysis
 
-<img width="1041" height="559" alt="image" src="https://github.com/user-attachments/assets/a268aac4-d541-47e8-811b-c84771f5ee09" />
+<img width="919" height="490" alt="image" src="https://github.com/user-attachments/assets/46c37c5f-9bc9-4093-80ee-6fc513ba74bc" />
+
 
 
 #### Page 5: Customer Detail
 
-<img width="1037" height="555" alt="image" src="https://github.com/user-attachments/assets/90e5e641-3629-4dc8-b0e1-7a4c07ba277a" />
+<img width="918" height="490" alt="image" src="https://github.com/user-attachments/assets/4047a4fe-fca3-4581-88c2-16918f041f05" />
+
 
 
 #### Page 6: Seller Analysis
 
-<img width="1042" height="560" alt="image" src="https://github.com/user-attachments/assets/5ee88303-df4c-4d0a-91b3-b0419d512dfd" />
+<img width="918" height="492" alt="image" src="https://github.com/user-attachments/assets/522eabd6-0b0f-45c3-930f-bfe30bd87c5a" />
+
 
 
 #### Page 7: RFM Analysis
 
-<img width="1038" height="558" alt="image" src="https://github.com/user-attachments/assets/82b406aa-49e5-4647-9eb5-6dc49b5142f1" />
+<img width="921" height="493" alt="image" src="https://github.com/user-attachments/assets/7d9ef523-83a4-4c1e-bce2-4289434dd80f" />
 
 
 ---
 
-## 📊 Key Insights
+## Key Insights
 
-- **Revenue & Orders:** Generated **$15.4M** from **99.4K orders**, with an **Average Order Value (AOV) of $159.9**,
-  **12.5-day** average delivery time, **4.16/5** average customer rating, and a **97%** delivery success rate.
+- **Sales & Orders:** **R$15.4M** from **96.5K** delivered orders (99.4K placed) with an **Average Order Value (AOV) of
+  $159.9**, average delivery **12.5 days**, average rating **4.16/5**, delivery success **97%**
   
-- **Delivery Performance:** Faster deliveries consistently result in higher customer satisfaction 0-5 day deliveries
-   average 4.44★; 15+ day deliveries drop to 3.60★
+- **Delivery Performance:** Orders delivered in 0-5 days average **4.44**, but orders taking 16+ days drop to **3.60**.
+  Late orders (**8%**) average just **2.57** vs **4.29** on time.
+
+- **Categories:** Health & beauty (**9.3%**), watches & gifts (**8.8%**), and bed & bath (**7.7%**) lead sales. Bed & bath
+   has the most orders but a below-average **3.94**.
   
-- **Customer Insights:** **97% of customers purchase only once**, while only **3%** return for a second purchase,
-   making customer retention the platform's largest growth opportunity.
+- **Customer Insights:** **97% of customers purchase only once**, while only **3%** return for a second purchase, making
+  customer retention the platform's largest growth opportunity.
   
-- **Seller Insights:** High-volume sellers consistently maintain **4.0–4.3★** ratings, while small sellers show
-   more inconsistent customer ratings. The **Top 10 sellers** generate approximately **13%** of marketplace
-   revenue,indicating healthy revenue distribution.
+- **Seller Insights:** The top 10 sellers bring in **13%** of sales and the top 10% bring in **67%**. Size doesn't change
+  ratings: sellers with 300+ orders average **4.11**, vs **4.18** for sellers under 20 orders. smaller sellers are excluded
+  because too few reviews make their averages unreliable.
   
-- **Geographic Insights**, Customers and revenue are heavily concentrated in **São Paulo** and a few major states.
-   The platform averages **31 customers per seller**, with several regions showing high customer demand but relatively
-   few sellers, highlighting expansion opportunities.
+- **Geographic Insights:** Sao Paulo brings in **37%** of sales, and SP, RJ, and MG together bring in **62%**. The average is
+  **31** customers per seller, but Bahia and Pernambuco have over **170**
   
-- **RFM Analysis:** **At Risk** customers account for **40% of total revenue**, whereas **Champions** contribute only
-   **2.38%**, making retention of at-risk customers a critical business priority.
+- **RFM Analysis:** 97% of customers are one-time buyers: **Lost Customers** (inactive) are 58% of customers and 56% of revenue, and
+  **Potential Loyalists** (recent) are 39% and 38.5%. Repeat buyers are rare (**At Risk** 1,600, **Champions** 983, **Loyal** 218)
 
 ---
 
-## 💡 Business Recommendations
+## Business Recommendations
 
-1. **Prioritize customer retention.** Since **97%** of customers purchase only once, improving 
-   repeat purchases will have a bigger impact on revenue than acquiring more one time buyers.
+1. **Prioritize customer retention.**  With 97% of customers buying once, even a small
+   improvement in repeat rate adds more revenue than acquiring new one-time buyers.
+   Test post-purchase offers, follow-up emails and loyalty rewards
 
-2. **Focus on the "At Risk" customer segment.** This group already generates **40% of total revenue**. 
-   Losing them would hurt the business more than losing any other segment. Targeted win-back 
-   campaigns, loyalty rewards, and personalized offers can help reduce churn.
+2. **Convert "Potential Loyalists" first.** These 36,141 recent one-time buyers (38.5% of
+   revenue) averaged 139 days since purchase, so the window is closing. A timely
+   second-purchase incentive is the best chance to move them toward repeat behavior.
 
-3. **Maintain fast delivery.** The data shows faster deliveries consistently receive higher 
-   customer ratings, making delivery speed a key driver of customer satisfaction and retention.
+3. **Maintain fast delivery.** Faster deliveries go with higher ratings (4.44 vs 3.60 for
+   15+ days). Prioritize reducing the slowest deliveries, and track late-vs-estimate performance
+   alongside delivery time.
 
 4. **Expand seller presence in under served states.** Recruit more sellers in regions with high 
    customer demand but relatively few local sellers to improve marketplace coverage.
 
-5. **Learn from top-performing sellers.** High-volume sellers maintain strong ratings, so their 
-   best practices can be used to improve seller onboarding and support.
+5. **Study high-volume sellers.** Sellers with strong volume maintain solid ratings, so
+   their practices can inform seller onboarding and support.
 
 6. **Treat "Champions"** as a small but valuable group, not the main revenue engine. Because the
    Champions segment currently contributes a small share of revenue, growing this loyal customer
    base will strengthen long-term business growth.
 
-7. **Exclude early launch data from future analysis.** The low order volume during the platform's 
-   early months is not representative and should be separated from ongoing performance analysis.
+7. **Exclude incomplete periods from trend analysis.** Early 2016 (very low volume, with an empty
+   November 2016) and late 2018 (partial data) should be separated so they don't distort
+   growth rates.
 
 ---
 
-## 🚀 How to Use
+## How to Use
 
 ### SQL Analysis
-1. Clone or download this repository
-2. Download the dataset see [`data/README.md`](data/README.md) for the source link and setup instructions
-   and import it into MySQL
-3. Open MySQL Workbench and run the files in the `queries/` folder in order
-4. Each file is organized by analysis section and includes inline comments explaining the business
-   question
+1. Download the dataset from Kaggle (link in the Data section) and import the 9 CSV files into a MySQL database
+2. Open MySQL Workbench and run the files in the `queries/` folder in order
+3. Each file covers one analysis area, with comments explaining the business question
 
 ### Power BI Dashboard
-1. Download the `.pbix` file from the `dashboard/` folder
-2. Open in Power BI Desktop and connect it to your own MySQL instance of the Olist database
-3. Use the Year and Date Range slicers on each page, the metric-selector toggle on the Category
-   Detail page, and the drill-through from the Executive Dashboard's category chart to explore
-   findings interactively
-4. Visit the RFM Analysis page to explore the customer segment breakdown and see which segments
-   drive the most revenue
+1. Download the `.pbix` file from the `dashboard/` folder and open it in Power BI Desktop. The data is included in the
+   file, so you don't need MySQL to explore it
+3. Use the Year and Date Range slicers on each page
+4. On the Executive Dashboard, right-click a category in the chart and choose Drill through to open Category Detail, then
+   use the metric toggle to switch measures
+6. Open the RFM Analysis page to see the customer segments and how much revenue each one brings in
 
 ---
 
-## 📌 Future Improvements
+## Future Improvements
 - Cohort retention analysis by acquisition month
 - Seller-level (not just state-level) delivery performance
-- Publish to Power BI Service for a shareable live link
+
+
+## Contact
+Feel free to reach out if you'd like to connect or discuss this project:
+- **LinkedIn:** [linkedin.com/in/muneeb-alam0](https://www.linkedin.com/in/muneeb-alam0/)
+- **Email:** muneebalam140@gmail.com
+
